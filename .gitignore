@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *.so
 .Python
+.python-version
 
 # Virtual environments
 .venv/
@@ -39,3 +40,6 @@ Thumbs.db
 
 # Notebooks
 .ipynb_checkpoints/
+
+# Data
+.dataset_path_cache.json
