@@ -43,3 +43,6 @@ Thumbs.db
 
 # Data
 .dataset_path_cache.json
+
+# Model checkpoints
+models/
