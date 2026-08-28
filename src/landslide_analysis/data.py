@@ -26,9 +26,19 @@ class Landslide4SenseDataset(Dataset):
         image: float32 tensor of shape (14, 128, 128), z-scored per band
                with the training-split statistics
         mask:  float32 tensor of shape (128, 128), values 0/1
+
+    With augment=True (train split only), each sample is randomly flipped
+    and/or rotated by a multiple of 90 degrees, image and mask together.
     """
 
-    def __init__(self, data_dir: Path, split: str, splits_file: Path, stats_file: Path):
+    def __init__(
+        self,
+        data_dir: Path,
+        split: str,
+        splits_file: Path,
+        stats_file: Path,
+        augment: bool = False,
+    ):
         splits = json.loads(Path(splits_file).read_text())
         if split not in splits:
             raise ValueError(f"split must be one of {sorted(splits)}, got {split!r}")
@@ -40,6 +50,7 @@ class Landslide4SenseDataset(Dataset):
 
         self.img_dir = Path(data_dir) / "TrainData" / "img"
         self.mask_dir = Path(data_dir) / "TrainData" / "mask"
+        self.augment = augment
 
     def __len__(self) -> int:
         return len(self.ids)
@@ -53,4 +64,14 @@ class Landslide4SenseDataset(Dataset):
 
         img = (img - self.mean) / self.std
         image = torch.from_numpy(img).permute(2, 0, 1)  # (14, 128, 128)
-        return image, torch.from_numpy(mask)
+        target = torch.from_numpy(mask)
+
+        if self.augment:
+            if torch.rand(()) < 0.5:
+                image, target = image.flip(-1), target.flip(-1)  # horizontal
+            if torch.rand(()) < 0.5:
+                image, target = image.flip(-2), target.flip(-2)  # vertical
+            k = int(torch.randint(0, 4, ()))
+            image, target = image.rot90(k, dims=(-2, -1)), target.rot90(k, dims=(-2, -1))
+
+        return image, target
